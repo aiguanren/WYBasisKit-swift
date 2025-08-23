@@ -9,7 +9,7 @@
 import UIKit
 
 /// 国际化语言版本(目前只国际化了简体中文、繁体中文、英语、法语、德语、俄语等29种语言，其他的可以调用WYLanguage.other属性来查看并设置需要加载的自定义本地化语言读取表)
-@frozen public enum WYLanguage: RawRepresentable {
+public enum WYLanguage: RawRepresentable {
     
     /// 简体中文(zh-Hans)
     case zh_Hans
@@ -339,13 +339,25 @@ public struct WYLocalizableManager {
     
     /// 获取当前系统语言
     public static func currentSystemLanguage() -> String {
+        // 从 UserDefaults 获取语言数组，安全解包
+        let appleLanguages = UserDefaults.standard.object(forKey: WYBasisKitLanguage) as? [String] ?? []
         
-        let appleLanguages: [String] = (UserDefaults.standard.object(forKey: WYBasisKitLanguage) as! [String])
-        let countryCode: String = (Locale.current as NSLocale).object(forKey: NSLocale.Key.countryCode) as? String ?? ""
-        var appleLanguage: String = appleLanguages.first!.replacingOccurrences(of: "-" + countryCode, with: "")
+        // 获取国家代码
+        let countryCode = Locale.current.regionCode ?? ""
+        
+        // 获取首个语言，如果为空则默认 "en"
+        var appleLanguage = appleLanguages.first ?? "en"
+        
+        // 移除国家代码后缀，例如 "en-US" -> "en"
+        if !countryCode.isEmpty {
+            appleLanguage = appleLanguage.replacingOccurrences(of: "-" + countryCode, with: "")
+        }
+        
+        // 如果语言以 "en" 开头，则统一返回 "en"
         if appleLanguage.hasPrefix("en") {
             appleLanguage = "en"
         }
+        
         return appleLanguage
     }
     

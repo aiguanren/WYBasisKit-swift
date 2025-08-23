@@ -39,7 +39,7 @@ public struct WYEmojiPreviewConfig {
     public init() {}
 }
 
-@frozen public enum WYEmojiPreviewStyle {
+public enum WYEmojiPreviewStyle {
     
     /// 默认静态图展示(png、jpg、jpeg等格式的静态图)
     case `default`

@@ -4,7 +4,7 @@
 //
 //  Created by 官人 on 2020/11/21.
 //  Copyright © 2020 官人. All rights reserved.
-//
+//  
 
 /**
  * 可编译通过的特殊字符 𝟬 𝟭 𝟮 𝟯 𝟰 𝟱 𝟲 𝟳 𝟴 𝟵  ₀ ₁ ₂ ₃ ₄ ₅ ₆ ₇ ₈ ₉   ․﹒𝙭ｘ𝙓
@@ -43,7 +43,7 @@ public struct WYRatio {
 
 public struct WYBasisKitConfig {
     
-    /// 设置默认屏幕分辨率
+    /// 设置默认屏幕分辨率(建议根据设计图的分辨率设置)
     public static var defaultScreenPixels: WYScreenPixels = WYScreenPixels(width: 390, height: 844)
     
     /// 设置字号适配的最大最小比率数

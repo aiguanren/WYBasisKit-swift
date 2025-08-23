@@ -29,7 +29,7 @@ public struct WYLogManager {
      *    - 点击按钮进入日志预览界面
      *    - 使用右上角分享功能导出日志文件
      */
-    @frozen public enum WYLogOutputMode: Int {
+    public enum WYLogOutputMode: Int {
         
         /// 不保存日志，仅在 DEBUG 模式下输出到控制台（默认）
         case debugConsoleOnly = 0
@@ -80,24 +80,21 @@ public struct WYLogManager {
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
         let timestamp = timeFormatter.string(from: Date())
-        let fileName = (file as NSString).lastPathComponent
+        let fileName = URL(fileURLWithPath: file).lastPathComponent
         let message = messages.compactMap { "\($0)" }.joined(separator: " ")
         
         // 日志内容
         let fullLog = "\(timestamp) ——> \(fileName) ——> \(function) ——> line:\(line)\n\n\(message)\(logEntrySeparator)"
         
+        let isDebug = _isDebugAssertConfiguration()
         
         switch outputMode {
         case .debugConsoleOnly:
-#if DEBUG
-            print(fullLog)
-#endif
+            if isDebug { print(fullLog) }
         case .alwaysConsoleOnly:
             print(fullLog)
         case .debugConsoleAndFile:
-#if DEBUG
-            print(fullLog)
-#endif
+            if isDebug { print(fullLog) }
             saveLogToFile(fullLog)
         case .alwaysConsoleAndFile:
             print(fullLog)
@@ -167,47 +164,73 @@ public struct WYLogManager {
     /// 写入日志文件
     private static func saveLogToFile(_ log: String) {
         logQueue.async {
-            
-            let path = logFilePath
+            let fileURL = URL(fileURLWithPath: logFilePath)
             let fileManager = FileManager.default
             
             // 确保目录存在
-            let directory = (path as NSString).deletingLastPathComponent
-            if !fileManager.fileExists(atPath: directory) {
-                try? fileManager.createDirectory(atPath: directory, withIntermediateDirectories: true)
+            let directoryURL = fileURL.deletingLastPathComponent()
+            if !fileManager.fileExists(atPath: directoryURL.path) {
+                do {
+                    try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+                } catch {
+                    output("[WYLogManager] 创建目录失败: \(error.localizedDescription)")
+                    return
+                }
             }
             
             // 确保文件存在
-            if !fileManager.fileExists(atPath: path) {
-                fileManager.createFile(atPath: path, contents: nil)
+            if !fileManager.fileExists(atPath: fileURL.path) {
+                fileManager.createFile(atPath: fileURL.path, contents: nil)
             }
             
-            // 使用 FileHandle 追加写入（UTF-8编码）
-            guard let fileHandle = FileHandle(forWritingAtPath: path) else {
-                output("[WYLogManager] 打开日志文件失败，可能是路径无效或没有写入权限")
-                return
+            do {
+                // 打开文件
+                let fileHandle = try FileHandle(forWritingTo: fileURL)
+                defer {
+                    do { try fileHandle.close() }
+                    catch { output("[WYLogManager] 关闭文件失败: \(error.localizedDescription)") }
+                }
+                
+                // 移动到文件末尾
+                if #available(iOS 13.4, *) {
+                    try fileHandle.seekToEnd()
+                } else {
+                    fileHandle.seekToEndOfFile()
+                }
+                
+                // 是否首次写入，决定是否加 BOM
+                let fileSize: UInt64
+                if #available(iOS 13.4, *) {
+                    fileSize = (try fileHandle.offset())
+                } else {
+                    fileSize = fileHandle.offsetInFile
+                }
+                
+                if fileSize == 0 {
+                    let bomData = Data([0xEF, 0xBB, 0xBF])
+                    fileHandle.write(bomData)
+                }
+                
+                // 写入日志
+                guard let logData = (log + "\n").data(using: .utf8) else {
+                    output("[WYLogManager] 日志内容无法转换为 UTF-8 数据")
+                    return
+                }
+                
+                if #available(iOS 13.4, *) {
+                    try fileHandle.write(contentsOf: logData)
+                } else {
+                    fileHandle.write(logData)
+                }
+                
+            } catch {
+                output("[WYLogManager] 写入日志失败: \(error.localizedDescription)")
             }
-            
-            defer { fileHandle.closeFile() }
-            fileHandle.seekToEndOfFile()
-            
-            // 添加 UTF-8 BOM 头（仅首次写入）
-            if fileHandle.offsetInFile == 0 {
-                let bomData = Data([0xEF, 0xBB, 0xBF])
-                fileHandle.write(bomData)
-            }
-            
-            // 写入日志数据（确保使用 UTF-8）
-            guard let logData = (log + "\n").data(using: .utf8) else {
-                output("[WYLogManager] 日志内容无法转换为 UTF-8 数据")
-                return
-            }
-            fileHandle.write(logData)
         }
     }
 }
 
-/// 按钮触发行为封装为类，便于 @objc 调用
+/// 按钮触发行为封装为类
 private class WYLogAction {
     @objc static func showLogPreview() {
         let vc = WYLogPreviewViewController()
@@ -300,16 +323,19 @@ final class WYLogCell: UITableViewCell {
     func configure(text: String, keyword: String?, canCopyed: Bool = true) {
         if let keyword = keyword, !keyword.isEmpty {
             let attributed = NSMutableAttributedString(string: text)
-            let range = (text as NSString).range(of: keyword, options: .caseInsensitive)
-            if range.location != NSNotFound {
-                attributed.addAttribute(.backgroundColor, value: UIColor.yellow, range: range)
+            
+            if let range = text.range(of: keyword, options: .caseInsensitive) {
+                let nsRange = NSRange(range, in: text)
+                attributed.addAttribute(.backgroundColor, value: UIColor.yellow, range: nsRange)
             }
+            
             label.attributedText = attributed
         } else {
             label.text = text
         }
-        copyButton.isEnabled = canCopyed;
-        copyButton.layer.borderColor = copyButton.isEnabled ?  copyButton.titleLabel?.textColor.cgColor : UIColor.lightGray.cgColor
+        
+        copyButton.isEnabled = canCopyed
+        copyButton.layer.borderColor = copyButton.isEnabled ? copyButton.titleLabel?.textColor.cgColor : UIColor.lightGray.cgColor
     }
     
     @objc private func handleCopy() {

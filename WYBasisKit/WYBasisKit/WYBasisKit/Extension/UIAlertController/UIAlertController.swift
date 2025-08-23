@@ -64,7 +64,7 @@ public extension UIAlertController {
             }
         }
     }
-
+    
     @discardableResult
     private class func wy_internalShow(style: UIAlertController.Style = .alert, title: String = "", message: String = "", duration: TimeInterval = 0.0, actionSheetNeedCancel: Bool = true, textFieldPlaceholders: [String] = [], actions: [String] = [], handler:((_ actionStr: String, _ textFieldTexts: [String]) -> Void)? = nil) -> UIAlertController? {
         
@@ -101,7 +101,7 @@ public extension UIAlertController {
             DispatchQueue.main.asyncAfter(deadline: .now()+duration) {
                 
                 if (handler != nil) {
-
+                    
                     handler!("", [])
                 }
                 alertController.wy_alertWindow?.rootViewController?.dismiss(animated: true, completion: nil)
@@ -113,21 +113,21 @@ public extension UIAlertController {
     
     private func wy_addAlertAction(actionStr: String, actionStyle: UIAlertAction.Style, alertController: UIAlertController, textFieldPlaceholders: [String] = [], handler:((_ actionStr: String, _ textFieldTexts: [String]) -> Void)? = nil) {
         
-        let action: UIAlertAction = UIAlertAction(title: actionStr, style: actionStyle) { (alertAction) in
+        let action = UIAlertAction(title: actionStr, style: actionStyle) { alertAction in
             
-            if (handler != nil) {
-
-                let texts: NSMutableArray = []
-                if !textFieldPlaceholders.isEmpty {
-                    
-                    for textField: UITextField in alertController.textFields! {
-                        
-                        texts.add(textField.text ?? "")
-                    }
+            if let handler = handler {
+                var texts: [String] = []
+                
+                // 如果有 textFieldPlaceholders，则收集对应文本
+                if !textFieldPlaceholders.isEmpty, let textFields = alertController.textFields {
+                    texts = textFields.map { $0.text ?? "" }
                 }
-                handler!(alertAction.title!, texts.copy() as! Array<String>)
+                
+                if let title = alertAction.title {
+                    handler(title, texts)
+                }
             }
-            alertController.wy_sharedAppDelegate().window?!.makeKeyAndVisible()
+            alertController.wy_sharedAppDelegate().window??.makeKeyAndVisible()
         }
         alertController.addAction(action)
     }
@@ -154,7 +154,7 @@ public extension UIAlertController {
         guard let obj = object else {
             return ""
         }
-
+        
         if obj is String {
             return obj as! String
         }
@@ -169,24 +169,27 @@ public extension UIAlertController {
         
         var propertys: [String: Any] = [:]
         
-        if (object != nil) {
-            Mirror(reflecting: object!).children.forEach { (child) in
+        if let object = object {
+            Mirror(reflecting: object).children.forEach { child in
                 propertys[child.label ?? "未知"] = type(of: child.value)
             }
         }
+        
         guard let objClass = NSClassFromString(className) else {
             return propertys.keys.contains(property)
         }
         
         var count: UInt32 = 0
-        let ivars = class_copyIvarList(objClass, &count)
+        guard let ivars = class_copyIvarList(objClass, &count) else { return propertys.keys.contains(property) }
+        
         for i in 0..<count {
-            let ivar = ivars?[Int(i)]
-            let ivarName = NSString(cString: ivar_getName(ivar!)!, encoding: String.Encoding.utf8.rawValue)
-            let ivarType = NSString(cString: ivar_getTypeEncoding(ivar!)!, encoding: String.Encoding.utf8.rawValue)
+            let ivar = ivars[Int(i)]
+            let ivarName = ivar_getName(ivar).flatMap { String(cString: $0) } ?? ""
+            let ivarType = ivar_getTypeEncoding(ivar).flatMap { String(cString: $0) } ?? "未知"
             
-            propertys[((ivarName ?? "") as String)] = (ivarType as String?) ?? "未知"
+            propertys[ivarName] = ivarType
         }
+        
         return propertys.keys.contains(property)
     }
     

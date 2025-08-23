@@ -13,10 +13,10 @@ import LocalAuthentication
 public let faceIDKey: String = "NSFaceIDUsageDescription"
 
 /// 生物识别模式
-@frozen public enum WYBiometricMode {
+public enum WYBiometricMode: Int {
     
     /// 未知或者不支持
-    case none
+    case none = 0
     
     /// 指纹识别
     case touchID
@@ -59,7 +59,19 @@ public func wy_checkBiometric() -> WYBiometricMode {
     return biometric
 }
 
-/// 生物识别认证
+/**
+ * 生物识别认证（指纹或面部识别）
+ *
+ * - Parameters:
+ *   - localizedFallbackTitle: 认证失败时显示的备选按钮标题（如"使用密码"）
+ *             传入空字符串则不显示备选按钮，默认为空
+ *   - localizedReason: 向用户解释为什么需要生物识别认证的描述文本
+ *             此文本将显示在系统弹出的认证对话框中
+ *   - handler: 认证完成后的回调闭包
+ *             - isBackupHandler: 用户是否点击了备选按钮（如"使用密码"）
+ *             - isSuccess: 认证是否成功
+ *             - error: 认证失败时的错误描述信息，认证成功时为空
+ */
 public func wy_verifyBiometrics(localizedFallbackTitle: String = "", localizedReason: String, handler: @escaping (_ isBackupHandler: Bool, _ isSuccess: Bool, _ error: String) -> Void?) {
     
     if wy_checkBiometric() == .faceID {

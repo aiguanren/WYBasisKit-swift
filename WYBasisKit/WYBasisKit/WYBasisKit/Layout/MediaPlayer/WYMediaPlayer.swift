@@ -13,7 +13,7 @@ import UIKit
 import FSPlayer
 
 /// 播放器状态回调
-@objc @frozen public enum WYMediaPlayerState: Int {
+public enum WYMediaPlayerState: Int {
     /// 未知状态
     case unknown
     /// 第一帧渲染完成
@@ -44,13 +44,13 @@ import FSPlayer
     case playUrlEmpty
 }
 
-@objc public protocol WYMediaPlayerDelegate {
+public protocol WYMediaPlayerDelegate {
     
     /// 播放器状态回调
-    @objc optional func mediaPlayerDidChangeState(_ player: WYMediaPlayer, _ state: WYMediaPlayerState)
+    func mediaPlayerDidChangeState(_ player: WYMediaPlayer, _ state: WYMediaPlayerState)
     
     /// 音视频字幕流信息
-    @objc optional func mediaPlayerDidChangeSubtitleStream(_ player: WYMediaPlayer, _ mediaMeta: [AnyHashable: Any])
+    func mediaPlayerDidChangeSubtitleStream(_ player: WYMediaPlayer, _ mediaMeta: [AnyHashable: Any])
 }
 
 public class WYMediaPlayer: UIImageView {
@@ -65,7 +65,7 @@ public class WYMediaPlayer: UIImageView {
     public var options: FSOptions?
     
     /// 播放器状态回调代理
-    public weak var delegate: WYMediaPlayerDelegate?
+    public var delegate: WYMediaPlayerDelegate?
     
     /// 循环播放的次数，为0表示无限次循环(点播流有效)
     public var looping: Int64 = 0
@@ -407,12 +407,12 @@ public class WYMediaPlayer: UIImageView {
     
     @objc private func ijkPlayerSubtitleStreamPrepared(notification: Notification) {
         guard let player = ijkPlayer else { return }
-        delegate?.mediaPlayerDidChangeSubtitleStream?(self, player.monitor.mediaMeta)
+        delegate?.mediaPlayerDidChangeSubtitleStream(self, player.monitor.mediaMeta)
     }
     
     @objc private func ijkPlayerSubtitleStreamDidChange(notification: Notification) {
         guard let player = ijkPlayer else { return }
-        delegate?.mediaPlayerDidChangeSubtitleStream?(self, player.monitor.mediaMeta)
+        delegate?.mediaPlayerDidChangeSubtitleStream(self, player.monitor.mediaMeta)
     }
     
     private func callback(with currentState: WYMediaPlayerState) {
@@ -420,7 +420,7 @@ public class WYMediaPlayer: UIImageView {
             return
         }
         state = currentState
-        delegate?.mediaPlayerDidChangeState?(self, state)
+        delegate?.mediaPlayerDidChangeState(self, state)
     }
     
     deinit {
@@ -435,4 +435,14 @@ public class WYMediaPlayer: UIImageView {
      }
      */
 }
+
+public extension WYMediaPlayerDelegate {
+    
+    /// 播放器状态回调
+    func mediaPlayerDidChangeState(_ player: WYMediaPlayer, _ state: WYMediaPlayerState) {}
+    
+    /// 音视频字幕流信息
+    func mediaPlayerDidChangeSubtitleStream(_ player: WYMediaPlayer, _ mediaMeta: [AnyHashable: Any]) {}
+}
+
 #endif

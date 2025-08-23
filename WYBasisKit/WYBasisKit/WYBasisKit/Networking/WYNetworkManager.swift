@@ -10,7 +10,7 @@ import Moya
 import Alamofire
 
 /// 网络请求任务类型
-@frozen public enum WYTaskMethod {
+public enum WYTaskMethod {
     
     /// 数据任务
     case parameters
@@ -23,7 +23,7 @@ import Alamofire
 }
 
 /// 上传类型
-@frozen public enum WYFileType {
+public enum WYFileType {
     
     /// 上传图片
     case image
@@ -36,7 +36,7 @@ import Alamofire
 }
 
 /// 需要映射的Key
-@frozen public enum WYMappingKey {
+public enum WYMappingKey {
     case message, code, data
 }
 
@@ -54,7 +54,7 @@ public struct WYResponse: Codable {
     }
 }
 
-@frozen public enum WYHandler {
+public enum WYHandler {
     
     /// 进度回调
     case progress(_ progress: WYProgress)
@@ -818,12 +818,14 @@ extension WYNetworkManager {
     
     /// DEBUG打印日志
     public static func wy_networkPrint(_ messages: Any..., file: String = #file, function: String = #function, line: Int = #line) {
-        #if DEBUG
+        let isDebug = _isDebugAssertConfiguration()
+        guard isDebug else { return }
+        
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
         let time = timeFormatter.string(from: Date())
         let message = messages.compactMap { "\($0)" }.joined(separator: " ")
-        print("\n\(time) ——> \((file as NSString).lastPathComponent) ——> \(function) ——> line:\(line)\n\n \(message)\n\n\n")
-        #endif
+        let fileName = URL(fileURLWithPath: file).lastPathComponent
+        
     }
 }

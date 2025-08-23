@@ -53,15 +53,18 @@ public extension CGFloat {
      *  @param precision 精度(默认保留2位小数)
      *
      */
-    static func wy_randomFloat(minimux: CGFloat = 0.01, maximum: CGFloat = 99999.99, precision: NSInteger = 2) -> CGFloat {
+    static func wy_randomFloat(minimux: CGFloat = 0.01,
+                               maximum: CGFloat = 99999.99,
+                               precision: Int = 2) -> CGFloat {
         
         guard minimux < maximum else {
             return maximum
         }
         
-        let range = Swift.abs(minimux - maximum)
-        let base = CGFloat(arc4random()) / CGFloat(UInt32.max)
-        let rawValue = base * range + Swift.min(minimux, maximum)
+        // 在 [minimux, maximum] 范围内随机生成浮点数
+        let rawValue = CGFloat.random(in: minimux...maximum)
+        
+        // 保留指定小数位
         let format = "%.\(precision)f"
         return CGFloat(Double(String(format: format, rawValue)) ?? 0)
     }

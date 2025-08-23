@@ -16,7 +16,7 @@ extension WYChatView: UITableViewDelegate, UITableViewDataSource {
     
     public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
-        guard let customCell: UITableViewCell = eventsHandler?.canManagerCellForRowEvents?(self, tableView, indexPath) else {
+        guard let customCell: UITableViewCell = eventsHandler?.canManagerCellForRowEvents(self, tableView, indexPath) else {
             
             let model: WYChatMessageModel = dataSource[indexPath.row]
             
@@ -40,7 +40,7 @@ extension WYChatView: WYChatInputViewDelegate, WYChatInputViewEventsHandler {
     
     public func didClickMoreView(_ isText: Bool) {
         
-        delegate?.didClickMoreView?(isText)
+        delegate?.didClickMoreView(isText)
         updateMoreViewConstraints(!isText)
     }
     
@@ -56,7 +56,7 @@ extension WYChatView: WYChatInputViewDelegate, WYChatInputViewEventsHandler {
             }
         }
         updateEmojiViewConstraints(!isText)
-        delegate?.didClickEmojiTextView?(isText)
+        delegate?.didClickEmojiTextView(isText)
     }
     
     public func didClickTextVoiceView(_ isText: Bool) {
@@ -69,20 +69,20 @@ extension WYChatView: WYChatInputViewDelegate, WYChatInputViewEventsHandler {
             emojiView?.isHidden = true
             moreView?.isHidden = true
         }
-        delegate?.didClickTextVoiceView?(isText)
+        delegate?.didClickTextVoiceView(isText)
     }
     
     public func textDidChanged(_ text: String) {
         chatInput.textView.attributedText = chatInput.sharedEmojiAttributed(string: text)
         updateEmojiFuncAreaViewState()
         scrollToLastMessage()
-        delegate?.textDidChanged?(text)
+        delegate?.textDidChanged(text)
     }
     
     public func didClickKeyboardEvent(_ text: String, silence: Bool) {
         
         if silence == false {
-            guard (eventsHandler?.canManagerKeyboardSendEvents?(text) ?? true) else {
+            guard (eventsHandler?.canManagerKeyboardSendEvents(text) ?? true) else {
                 return
             }
         }
@@ -94,7 +94,7 @@ extension WYChatView: WYChatInputViewDelegate, WYChatInputViewEventsHandler {
         chatInput.textView.text = ""
         updateEmojiFuncAreaViewState()
         chatInput.textViewDidChange(chatInput.textView, silence: true)
-        delegate?.keyboardSendMessage?(sendMessage(text))
+        delegate?.keyboardSendMessage(sendMessage(text))
     }
     
     public func didClickKeyboardEvent(_ text: String) {
@@ -145,19 +145,19 @@ extension WYChatView: WYChatInputViewDelegate, WYChatInputViewEventsHandler {
     }
     
     public func canManagerVoiceRecordEvents(_ longPress: UILongPressGestureRecognizer) -> Bool {
-        return eventsHandler?.canManagerVoiceRecordEvents?(longPress) ?? true
+        return eventsHandler?.canManagerVoiceRecordEvents(longPress) ?? true
     }
     
     public func canManagerTextVoiceViewEvents(_ textVoiceView: UIButton) -> Bool {
-        return eventsHandler?.canManagerTextVoiceViewEvents?(textVoiceView) ?? true
+        return eventsHandler?.canManagerTextVoiceViewEvents(textVoiceView) ?? true
     }
     
     public func canManagerTextEmojiViewEvents(_ textEmojiView: UIButton) -> Bool {
-        return eventsHandler?.canManagerTextEmojiViewEvents?(textEmojiView) ?? true
+        return eventsHandler?.canManagerTextEmojiViewEvents(textEmojiView) ?? true
     }
     
     public func canManagerMoreViewEvents(_ moreView: UIButton) -> Bool {
-        return eventsHandler?.canManagerMoreViewEvents?(moreView) ?? true
+        return eventsHandler?.canManagerMoreViewEvents(moreView) ?? true
     }
 }
 
@@ -185,49 +185,49 @@ extension WYChatView: WYChatEmojiViewDelegate, WYChatEmojiViewEventsHandler {
 
         chatInput.textView.selectedTextRange = chatInput.textView.textRange(from: start, to: end)
         
-        delegate?.didClickEmojiView?(emojiView, indexPath)
+        delegate?.didClickEmojiView(emojiView, indexPath)
     }
     
     public func emojiItemLongPress(_ gestureRecognizer: UILongPressGestureRecognizer, emoji: String, imageView: UIImageView) {
-        delegate?.emojiItemLongPress?(gestureRecognizer, emoji: emoji, imageView: imageView)
+        delegate?.emojiItemLongPress(gestureRecognizer, emoji: emoji, imageView: imageView)
     }
     
     public func didClickEmojiSendView(_ sendView: UIButton) {
         let emojiText: String = NSMutableAttributedString(attributedString: chatInput.textView.attributedText).wy_convertEmojiAttributedString(textColor: inputBarConfig.textColor, textFont: inputBarConfig.textFont).string
         didClickKeyboardEvent(emojiText, silence: true)
-        delegate?.didClickEmojiSendView?(sendView)
+        delegate?.didClickEmojiSendView(sendView)
     }
     
     public func didClickEmojiDeleteView(_ deleteView: UIButton) {
         chatInput.textView.deleteBackward()
-        delegate?.didClickEmojiDeleteView?(deleteView)
+        delegate?.didClickEmojiDeleteView(deleteView)
     }
     
     public func canManagerEmojiViewClickEvents(_ emojiView: WYChatEmojiView, _ indexPath: IndexPath) -> Bool {
-        return eventsHandler?.canManagerEmojiViewClickEvents?(emojiView, indexPath) ?? true
+        return eventsHandler?.canManagerEmojiViewClickEvents(emojiView, indexPath) ?? true
     }
     
     public func canManagerEmojiLongPressEvents(_ gestureRecognizer: UILongPressGestureRecognizer, emoji: String, imageView: UIImageView) -> Bool {
-        return eventsHandler?.canManagerEmojiLongPressEvents?(gestureRecognizer, emoji: emoji, imageView: imageView) ?? true
+        return eventsHandler?.canManagerEmojiLongPressEvents(gestureRecognizer, emoji: emoji, imageView: imageView) ?? true
     }
     
     public func canManagerEmojiDeleteViewClickEvents(_ deleteView: UIButton) -> Bool {
-        return eventsHandler?.canManagerEmojiDeleteViewClickEvents?(deleteView) ?? true
+        return eventsHandler?.canManagerEmojiDeleteViewClickEvents(deleteView) ?? true
     }
     
     public func canManagerEmojiSendViewClickEvents(_ sendView: UIButton) -> Bool {
-        return eventsHandler?.canManagerEmojiSendViewClickEvents?(sendView) ?? true
+        return eventsHandler?.canManagerEmojiSendViewClickEvents(sendView) ?? true
     }
 }
 
 extension WYChatView: WYChatMoreViewDelegate, WYMoreViewEventsHandler {
     
-    public func didClickMoreViewAt(_ itemIndex: NSInteger) {
+    public func didClickMoreViewAt(_ itemIndex: Int) {
         guard let moreView = moreView else { return }
-        delegate?.didClickMoreView?(moreView, itemIndex)
+        delegate?.didClickMoreView(moreView, itemIndex)
     }
     
-    public func canManagerMoreViewClickEvents(_ moreView: WYChatMoreView, _ itemIndex: NSInteger) -> Bool {
-        return eventsHandler?.canManagerMoreViewClickEvents?(moreView, itemIndex) ?? true
+    public func canManagerMoreViewClickEvents(_ moreView: WYChatMoreView, _ itemIndex: Int) -> Bool {
+        return eventsHandler?.canManagerMoreViewClickEvents(moreView, itemIndex) ?? true
     }
 }

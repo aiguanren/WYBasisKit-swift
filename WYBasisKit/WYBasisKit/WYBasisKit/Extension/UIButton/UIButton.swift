@@ -9,7 +9,7 @@
 import UIKit
 
 /// UIButton图片控件和文本控件显示位置
-@frozen public enum WYButtonPosition {
+public enum WYButtonPosition {
     
     /** 图片在左，文字在右，默认 */
     case imageLeftTitleRight
@@ -141,24 +141,24 @@ public extension UIButton {
     /** 利用运行时设置UIButton的titleLabel的显示位置 */
     var wy_titleRect: CGRect? {
         set {
-            objc_setAssociatedObject(self, WYAssociatedKeys.wy_titleRect, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            objc_setAssociatedObject(self, &WYAssociatedKeys.wy_titleRect, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
             UIButton.swizzleLayoutSubviews()
             setNeedsLayout()
         }
         get {
-            objc_getAssociatedObject(self, WYAssociatedKeys.wy_titleRect) as? CGRect
+            objc_getAssociatedObject(self, &WYAssociatedKeys.wy_titleRect) as? CGRect
         }
     }
     
     /** 利用运行时设置UIButton的imageView的显示位置 */
     var wy_imageRect: CGRect? {
         set {
-            objc_setAssociatedObject(self, WYAssociatedKeys.wy_imageRect, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            objc_setAssociatedObject(self, &WYAssociatedKeys.wy_imageRect, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
             UIButton.swizzleLayoutSubviews()
             setNeedsLayout()
         }
         get {
-            objc_getAssociatedObject(self, WYAssociatedKeys.wy_imageRect) as? CGRect
+            objc_getAssociatedObject(self, &WYAssociatedKeys.wy_imageRect) as? CGRect
         }
     }
     
@@ -214,7 +214,9 @@ public extension UIButton {
      */
     func wy_adjust(position: WYButtonPosition, spacing: CGFloat = 0) {
         
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            
+            guard let self = self else { return }
             
             if self.imageView?.image == nil || self.currentImage == nil || self.currentTitle?.isEmpty == true || self.titleLabel?.text?.isEmpty == true {
                 
@@ -296,19 +298,19 @@ private extension UIButton {
     private var intervalSelector: IntervalSelector? {
         
         set(newValue) {
-            objc_setAssociatedObject(self, WYAssociatedKeys.intervalSelector, newValue, .OBJC_ASSOCIATION_COPY_NONATOMIC)
+            objc_setAssociatedObject(self, &WYAssociatedKeys.intervalSelector, newValue, .OBJC_ASSOCIATION_COPY_NONATOMIC)
         }
         get {
-            return objc_getAssociatedObject(self, WYAssociatedKeys.intervalSelector) as? IntervalSelector
+            return objc_getAssociatedObject(self, &WYAssociatedKeys.intervalSelector) as? IntervalSelector
         }
     }
     
     private var selectorInterval: TimeInterval {
         set {
-            objc_setAssociatedObject(self, WYAssociatedKeys.selectorInterval, newValue, .OBJC_ASSOCIATION_COPY_NONATOMIC)
+            objc_setAssociatedObject(self, &WYAssociatedKeys.selectorInterval, newValue, .OBJC_ASSOCIATION_COPY_NONATOMIC)
         }
         get {
-            return objc_getAssociatedObject(self, WYAssociatedKeys.selectorInterval) as? TimeInterval ?? 0
+            return objc_getAssociatedObject(self, &WYAssociatedKeys.selectorInterval) as? TimeInterval ?? 0
         }
     }
     
@@ -362,13 +364,13 @@ private extension UIButton {
     /***** 利用运行时自由设置UIButton的titleLabel和imageView的显示位置 *****/
     
     struct WYAssociatedKeys {
-        static let intervalSelector = UnsafeRawPointer(bitPattern: "IntervalSelector".hashValue)!
-        static let selectorInterval = UnsafeRawPointer(bitPattern: "selectorInterval".hashValue)!
-        static let positionKey = UnsafeRawPointer(bitPattern: "positionKey".hashValue)!
-        static var spacingKey = UnsafeRawPointer(bitPattern: "spacingKey".hashValue)!
-        static var imageViewSizeKey = UnsafeRawPointer(bitPattern: "imageViewSizeKey".hashValue)!
-        static var titleLabelSizeKey = UnsafeRawPointer(bitPattern: "titleLabelSizeKey".hashValue)!
-        static var wy_imageRect = UnsafeRawPointer(bitPattern: "wy_imageRect".hashValue)!
-        static var wy_titleRect = UnsafeRawPointer(bitPattern: "wy_titleRect".hashValue)!
+        static var intervalSelector: UInt8 = 0
+        static var selectorInterval: UInt8 = 0
+        static var positionKey: UInt8 = 0
+        static var spacingKey: UInt8 = 0
+        static var imageViewSizeKey: UInt8 = 0
+        static var titleLabelSizeKey: UInt8 = 0
+        static var wy_imageRect: UInt8 = 0
+        static var wy_titleRect: UInt8 = 0
     }
 }

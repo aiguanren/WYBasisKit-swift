@@ -7,7 +7,7 @@
 
 import UIKit
 
-@frozen public enum WYSoundWavesStatus {
+public enum WYSoundWavesStatus {
     
     /// 声播正常录制状态
     case recording

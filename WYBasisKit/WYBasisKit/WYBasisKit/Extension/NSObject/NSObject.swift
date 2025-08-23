@@ -34,7 +34,7 @@ public extension NSObject {
         // 遍历所有类并筛选出继承自superClass的子类
         for someClass in allClasses {
             if class_getSuperclass(someClass) == superClass {
-                subClasses.append(NSStringFromClass(someClass))
+                subClasses.append(String(describing: someClass))
             }
         }
         
@@ -62,11 +62,12 @@ public extension NSObject {
             for i in 0..<Int(methodCount) {
                 let method = methods[i]
                 let selector = method_getName(method)
-                let methodName = NSStringFromSelector(selector)
+                let methodName = String(describing: selector)
                 methodList.append(methodName)
             }
             free(methods)
         }
+        
         return methodList
     }
     
@@ -75,25 +76,27 @@ public extension NSObject {
         
         var propertys: [String: Any] = [:]
         
-        if (object != nil) {
-            
-            Mirror(reflecting: object!).children.forEach { (child) in
+        if let object = object {
+            Mirror(reflecting: object).children.forEach { child in
                 propertys[child.label ?? ""] = type(of: child.value)
             }
         }
+        
         guard let objClass = NSClassFromString(className) else {
             return propertys
         }
         
         var count: UInt32 = 0
-        let ivars = class_copyIvarList(objClass, &count)
+        guard let ivars = class_copyIvarList(objClass, &count) else { return propertys }
+        
         for i in 0..<count {
-            let ivar = ivars?[Int(i)]
-            let ivarName = NSString(cString: ivar_getName(ivar!)!, encoding: String.Encoding.utf8.rawValue)
-            let ivarType = NSString(cString: ivar_getTypeEncoding(ivar!)!, encoding: String.Encoding.utf8.rawValue)
+            let ivar = ivars[Int(i)]
+            let ivarName = ivar_getName(ivar).flatMap { String(cString: $0) } ?? ""
+            let ivarType = ivar_getTypeEncoding(ivar).flatMap { String(cString: $0) } ?? ""
             
-            propertys[((ivarName ?? "") as String)] = (ivarType as String?) ?? ""
+            propertys[ivarName] = ivarType
         }
+        
         return propertys
     }
 }

@@ -10,7 +10,7 @@ import Foundation
 import UIKit
 
 /// 数据缓存时长(有效期)
-@frozen public enum WYStorageDurable {
+public enum WYStorageDurable {
     
     /// 缓存数据保持X分有效
     case minute(_ interval: TimeInterval)

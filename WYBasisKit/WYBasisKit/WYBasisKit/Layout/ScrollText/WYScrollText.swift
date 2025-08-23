@@ -8,17 +8,17 @@
 
 import SnapKit
 
-@objc public protocol WYScrollTextDelegate {
+public protocol WYScrollTextDelegate {
     
-    @objc optional func itemDidClick(_ itemIndex: NSInteger)
+    func itemDidClick(_ itemIndex: Int)
 }
 
 public class WYScrollText: UIView {
     
     /// 点击事件代理(也可以通过传入block监听)
-    public weak var delegate: WYScrollTextDelegate?
+    public var delegate: WYScrollTextDelegate?
     /// 点击事件(也可以通过实现代理监听)
-    public func didClickHandler(handler:((_ index: NSInteger) -> Void)? = .none) {
+    public func didClickHandler(handler:((_ index: Int) -> Void)? = .none) {
         actionHandler = handler
     }
     /// 占位文本
@@ -32,29 +32,27 @@ public class WYScrollText: UIView {
     /// 背景色, 默认透明色
     public var contentColor: UIColor = .clear
     
-    private var _textArray: [String]!
-    public var textArray: [String]! {
-        
+    private var _textArray: [String] = []
+    public var textArray: [String] {
+        get {
+            return _textArray
+        }
         set {
+            _textArray = newValue
             
-            _textArray = NSMutableArray(array: newValue) as? [String]
-            if _textArray.isEmpty == true {
-
+            if _textArray.isEmpty {
                 _textArray.append(placeholder)
             }
             
-            _textArray.append(_textArray.first ?? "")
+            if let first = _textArray.first {
+                _textArray.append(first)
+            }
             
-            DispatchQueue.main.async {
-                
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
                 self.collectionView.reloadData()
-                
                 self.startTimer()
             }
-        }
-        
-        get {
-            return _textArray
         }
     }
     
@@ -81,10 +79,10 @@ public class WYScrollText: UIView {
         return collectionview
     }()
     
-    private var actionHandler: ((_ index: NSInteger) -> Void)?
+    private var actionHandler: ((_ index: Int) -> Void)?
     
     /// 当前文本下标
-    private var textIndex: NSInteger = 0
+    private var textIndex: Int = 0
     
     /// 定时器
     private var timer: Timer?
@@ -179,7 +177,7 @@ extension WYScrollText: UICollectionViewDelegate, UICollectionViewDataSource, UI
             
             actionHandler!((textIndex == textArray.count-1) ? 0 : textIndex)
         }
-        delegate?.itemDidClick?((textIndex == textArray.count-1) ? 0 : textIndex)
+        delegate?.itemDidClick((textIndex == textArray.count-1) ? 0 : textIndex)
     }
 }
 
@@ -196,4 +194,9 @@ class SctolTextCell: UICollectionViewCell {
         
         return label
     }()
+}
+
+public extension WYScrollTextDelegate {
+    
+    func itemDidClick(_ itemIndex: Int) {}
 }

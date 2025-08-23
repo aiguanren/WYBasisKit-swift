@@ -9,7 +9,7 @@
 import UIKit
 
 /// UITableView注册类型
-@frozen public enum WYTableViewRegisterStyle {
+public enum WYTableViewRegisterStyle {
     
     /// 注册Cell
     case cell
@@ -92,10 +92,10 @@ public extension UITableView {
         
         set(newValue) {
             
-            objc_setAssociatedObject(self, WYAssociatedKeys.wy_allowOtherGestureRecognizer, newValue, .OBJC_ASSOCIATION_ASSIGN)
+            objc_setAssociatedObject(self, &WYAssociatedKeys.wy_allowOtherGestureRecognizer, newValue, .OBJC_ASSOCIATION_ASSIGN)
         }
         get {
-            return objc_getAssociatedObject(self, WYAssociatedKeys.wy_allowOtherGestureRecognizer) as? Bool ?? false
+            return objc_getAssociatedObject(self, &WYAssociatedKeys.wy_allowOtherGestureRecognizer) as? Bool ?? false
         }
     }
     
@@ -109,15 +109,13 @@ public extension UITableView {
     /// 注册UITableView的Cell或HeaderFooterView
     func wy_register(_ contentClass: AnyClass, _ style: WYTableViewRegisterStyle) {
         
-        let reuseIdentifier: String = NSStringFromClass(contentClass).components(separatedBy: ".").last ?? ""
+        let reuseIdentifier: String = String(describing: contentClass).components(separatedBy: ".").last ?? ""
         
         switch style {
         case .cell:
             register(contentClass, forCellReuseIdentifier: reuseIdentifier)
-            break
         case .headerFooterView:
             register(contentClass, forHeaderFooterViewReuseIdentifier: reuseIdentifier)
-            break
         }
     }
     
@@ -140,7 +138,7 @@ public extension UITableView {
     }
     
     private struct WYAssociatedKeys {
-        static let wy_allowOtherGestureRecognizer = UnsafeRawPointer(bitPattern: "wy_allowOtherGestureRecognizer".hashValue)!
+        static var wy_allowOtherGestureRecognizer: UInt8 = 0
     }
 }
 

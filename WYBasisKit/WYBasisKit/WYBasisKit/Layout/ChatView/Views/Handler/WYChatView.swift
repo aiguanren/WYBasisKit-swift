@@ -12,7 +12,7 @@ import SnapKit
 /// 自定义聊天UITableViewCell
 public var customChatRegisterClasss: [AnyClass] = []
 
-@frozen public enum WYChatTouchStyle {
+public enum WYChatTouchStyle {
     case done
     case more
     case emoji
@@ -20,8 +20,8 @@ public var customChatRegisterClasss: [AnyClass] = []
 
 public class WYChatView: UIView {
     
-    public weak var eventsHandler: WYChatViewEventsHandler? = nil
-    public weak var delegate: WYChatViewDelegate? = nil
+    public var eventsHandler: WYChatViewEventsHandler? = nil
+    public var delegate: WYChatViewDelegate? = nil
     
     public lazy var chatInput: WYChatInputView = {
         let inputView = WYChatInputView()
@@ -56,7 +56,8 @@ public class WYChatView: UIView {
                                           WYChatRecordsCell.self]
         
         for register: AnyClass in (registerClasss + customChatRegisterClasss) {
-            tableView.register(register, forCellReuseIdentifier: (NSStringFromClass(register).components(separatedBy: ".").last ?? ""))
+            let className = String(describing: register).components(separatedBy: ".").last ?? ""
+            tableView.register(register, forCellReuseIdentifier: className)
         }
         tableView.snp.makeConstraints { (make) in
             make.left.right.top.equalToSuperview()
@@ -163,7 +164,7 @@ public class WYChatView: UIView {
     
     @objc public func keyboardWillShowWith(_ notification: Notification, silence: Bool) {
         if silence == false {
-            guard (eventsHandler?.canManagerKeyboardWillShowEvents?(notification) ?? true) else {
+            guard (eventsHandler?.canManagerKeyboardWillShowEvents(notification) ?? true) else {
                 return
             }
         }
@@ -180,7 +181,7 @@ public class WYChatView: UIView {
     
     @objc public func keyboardWillDismissWith(_ silence: Bool) {
         if silence == false {
-            guard (eventsHandler?.canManagerKeyboardWillDismissEvents?() ?? true) else {
+            guard (eventsHandler?.canManagerKeyboardWillDismissEvents() ?? true) else {
                 return
             }
         }
@@ -289,12 +290,12 @@ public class WYChatView: UIView {
     public func scrollViewDidScroll(_ scrollView: UIScrollView, silence: Bool) {
         
         if silence == false {
-            guard (eventsHandler?.canManagerScrollViewDidScrollEvents?(scrollView) ?? true) else {
+            guard (eventsHandler?.canManagerScrollViewDidScrollEvents(scrollView) ?? true) else {
                 return
             }
         }
         if silence == false {
-            delegate?.scrollViewDidScroll?(scrollView)
+            delegate?.scrollViewDidScroll(scrollView)
         }
     }
     
@@ -314,11 +315,11 @@ public class WYChatView: UIView {
     /// APP变的活跃了
     @objc public func applicationDidBecomeActive(_ application: UIApplication) {
         
-        guard (eventsHandler?.canManagerApplicationDidBecomeActiveEvents?(application) ?? false) == true else {
+        guard (eventsHandler?.canManagerApplicationDidBecomeActiveEvents(application) ?? false) == true else {
             return
         }
         
-        delegate?.applicationDidBecomeActive?(application)
+        delegate?.applicationDidBecomeActive(application)
         tableView.reloadData()
     }
     

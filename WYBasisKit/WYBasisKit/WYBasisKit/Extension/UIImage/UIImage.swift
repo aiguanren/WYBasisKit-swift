@@ -10,7 +10,7 @@ import Foundation
 import UIKit
 
 /// 动图格式类型
-@frozen public enum WYAnimatedImageStyle {
+public enum WYAnimatedImageStyle {
     
     /// 普通 GIF 图片
     case GIF
@@ -303,24 +303,39 @@ public extension UIImage {
         self.draw(at: CGPoint.zero)
         
         // 文字显示在画布上
-        let paragraphStyle: NSMutableParagraphStyle = NSMutableParagraphStyle()
+        let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineBreakMode = .byCharWrapping
         paragraphStyle.alignment = .center
         paragraphStyle.lineSpacing = lineSpacing
-        let attributes = [NSAttributedString.Key.font: font, NSAttributedString.Key.paragraphStyle: paragraphStyle, NSAttributedString.Key.kern: NSNumber(value: Double(wordsSpacing))]
         
-        let stringSize: CGSize = text.boundingRect(with: size, options: NSStringDrawingOptions(rawValue: NSStringDrawingOptions.truncatesLastVisibleLine.rawValue | NSStringDrawingOptions.usesLineFragmentOrigin.rawValue | NSStringDrawingOptions.usesFontLeading.rawValue), attributes: attributes, context: nil).size
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .paragraphStyle: paragraphStyle,
+            .kern: wordsSpacing
+        ]
         
-        let textSize: CGSize = CGSize(width: ceil(stringSize.width), height: ceil(stringSize.height))
+        let stringSize = text.boundingRect(
+            with: size,
+            options: [.usesLineFragmentOrigin, .usesFontLeading, .truncatesLastVisibleLine],
+            attributes: attributes,
+            context: nil
+        ).size
+        
+        let textSize = CGSize(width: ceil(stringSize.width), height: ceil(stringSize.height))
         
         let rect = CGRect(x: titlePoint.x, y: titlePoint.y, width: textSize.width, height: textSize.height)
         
-        // 绘制文字
-        (text as NSString).draw(in: rect, withAttributes: [NSAttributedString.Key.font: font, NSAttributedString.Key.foregroundColor: color, NSAttributedString.Key.paragraphStyle: paragraphStyle])
+        // 绘制文字（纯 Swift）
+        text.draw(in: rect, withAttributes: [
+            .font: font,
+            .foregroundColor: color,
+            .paragraphStyle: paragraphStyle
+        ])
         
         // 返回绘制的新图形
         let newImage = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
+        
         return newImage!
     }
     
@@ -337,7 +352,7 @@ public extension UIImage {
         if imageName.isEmpty {
             
             WYLogManager.output("没有找到相关图片，因为传入的 imageName 为空， 已默认创建一张随机颜色图片供您使用")
-            return wy_createImage(from: UIColor(red: CGFloat(arc4random()%256)/255.0, green: CGFloat(arc4random()%256)/255.0, blue: CGFloat(arc4random()%256)/255.0, alpha: 1.0))
+            return wy_createImage(from: UIColor.wy_random)
         }
         
         if let imageBundle: WYSourceBundle = bundle {
@@ -352,7 +367,7 @@ public extension UIImage {
             guard let contentImage = UIImage(named: imageName, in: Bundle(path: resourcePath), compatibleWith: nil) else {
                 
                 WYLogManager.output("在 \(imageBundle.bundleName).bundle/\(imageBundle.subdirectory) 中没有找到 \(imageName) 这张图片，已默认创建一张随机颜色图片供您使用")
-                return wy_createImage(from: UIColor(red: CGFloat(arc4random()%256)/255.0, green: CGFloat(arc4random()%256)/255.0, blue: CGFloat(arc4random()%256)/255.0, alpha: 1.0))
+                return wy_createImage(from: UIColor.wy_random)
             }
             return contentImage
         }else {
@@ -365,7 +380,7 @@ public extension UIImage {
                     
                     WYLogManager.output("在项目路径或Assets下面，没有找到 \(imageName) 这张图片，已默认创建一张随机颜色图片供您使用")
                     
-                    return wy_createImage(from: UIColor(red: CGFloat(arc4random()%256)/255.0, green: CGFloat(arc4random()%256)/255.0, blue: CGFloat(arc4random()%256)/255.0, alpha: 1.0))
+                    return wy_createImage(from: UIColor.wy_random)
                 }
                 return contentImage
             }
@@ -391,70 +406,73 @@ public extension UIImage {
             return nil
         }
         
-        let suffix: String = (style == .GIF) ? ".gif" : ".png"
+        let suffix = (style == .GIF) ? ".gif" : ".png"
+        let animatedImageName = imageName.hasSuffix(suffix) ? imageName : (imageName + suffix)
         
-        let animatedImageName: String = imageName.hasSuffix(suffix) ? imageName : (imageName + suffix)
+        var contentPath = ""
         
-        var contentPath: String = ""
-        
-        if let sourceBundle: WYSourceBundle = bundle {
-            
+        if let sourceBundle = bundle {
             var subdirectoryPath = sourceBundle.subdirectory
-            if  (sourceBundle.subdirectory.isEmpty == false) && (sourceBundle.subdirectory.hasPrefix("/") == false) {
-                subdirectoryPath = "/" + sourceBundle.subdirectory
+            if !subdirectoryPath.isEmpty && !subdirectoryPath.hasPrefix("/") {
+                subdirectoryPath = "/" + subdirectoryPath
             }
             
-            contentPath = ((((Bundle(for: WYLocalizableClass.self).path(forResource: sourceBundle.bundleName, ofType: "bundle")) ?? (Bundle.main.path(forResource: sourceBundle.bundleName, ofType: "bundle"))) ?? "").appending(subdirectoryPath)) + "/" + animatedImageName
+            contentPath =
+                ((((Bundle(for: WYLocalizableClass.self)
+                    .path(forResource: sourceBundle.bundleName, ofType: "bundle"))
+                   ?? (Bundle.main.path(forResource: sourceBundle.bundleName, ofType: "bundle")))
+                  ?? "")
+                 .appending(subdirectoryPath)) + "/" + animatedImageName
             
-        }else {
-            contentPath = ((Bundle(for: WYLocalizableClass.self).path(forResource: animatedImageName, ofType: nil)) ?? (Bundle.main.path(forResource: animatedImageName, ofType: nil))) ?? ""
+        } else {
+            contentPath =
+                ((Bundle(for: WYLocalizableClass.self).path(forResource: animatedImageName, ofType: nil))
+                 ?? (Bundle.main.path(forResource: animatedImageName, ofType: nil)))
+                ?? ""
         }
         
-        guard let contentData = NSData(contentsOfFile: contentPath) else {
+        guard let contentData = try? Data(contentsOf: URL(fileURLWithPath: contentPath)) else {
             return nil
         }
         
-        guard let imageSource: CGImageSource = CGImageSourceCreateWithData(contentData as CFData, nil) else {
+        guard let imageSource = CGImageSourceCreateWithData(contentData as CFData, nil) else {
             return nil
         }
-
+        
         let imageCount = CGImageSourceGetCount(imageSource)
         
         var images = [UIImage]()
         var totalDuration: TimeInterval = 0
-        for i in 0...imageCount {
+        
+        for i in 0..<imageCount {
             guard let cgImage = CGImageSourceCreateImageAtIndex(imageSource, i, nil) else {
                 continue
             }
-            guard let properties: NSDictionary = CGImageSourceCopyPropertiesAtIndex(imageSource, i, nil) else {
-                continue
-            }
-
-            var pngDic: NSDictionary? = nil
-            if let gifDic = properties[kCGImagePropertyGIFDictionary] as? NSDictionary {
-                pngDic = gifDic
-            }
             
-            if (pngDic == nil) {
-                pngDic = properties[kCGImagePropertyPNGDictionary] as? NSDictionary
-            }
-            
-            guard let animatedDic = pngDic else {
+            guard let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, i, nil) as? [CFString: Any] else {
                 continue
             }
             
-            guard let duration = animatedDic[kCGImagePropertyGIFDelayTime] as? NSNumber else {
+            // 优先取 GIF 字典，其次 PNG
+            let animatedDic = (properties[kCGImagePropertyGIFDictionary] as? [CFString: Any])
+                ?? (properties[kCGImagePropertyPNGDictionary] as? [CFString: Any])
+            
+            guard let duration = animatedDic?[kCGImagePropertyGIFDelayTime] as? Double else {
                 continue
             }
             
-            // 将播放时间累加
-            totalDuration += duration.doubleValue
-            // 获取到所有的image
+            // 累加时间
+            totalDuration += duration
+            // 生成 UIImage
             let image = UIImage(cgImage: cgImage)
             images.append(image)
         }
-   
-        return WYGifInfo(animationImages: images, animationDuration: totalDuration, animatedImage: UIImage.animatedImage(with: images, duration: totalDuration))
+        
+        return WYGifInfo(
+            animationImages: images,
+            animationDuration: totalDuration,
+            animatedImage: UIImage.animatedImage(with: images, duration: totalDuration)
+        )
     }
 }
 

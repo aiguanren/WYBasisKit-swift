@@ -27,7 +27,16 @@ public struct WYEmojiViewConfig {
     public var collectionViewBottomOffset: CGFloat = 0
 
     /// 自定义Emoji数据源，示例：["[玫瑰](表情图片名)","[色](表情图片名)","[嘻嘻](表情图片名)"]
-    public var emojiSource: [String] = try! NSArray(contentsOf: URL(string: "file://".appending(emojiPath))!, error: ()) as! [String]
+    public var emojiSource: [String] = {
+        let url = URL(fileURLWithPath: emojiPath)
+        guard let data = try? Data(contentsOf: url) else { return [] }
+        guard let array = try? PropertyListSerialization.propertyList(
+            from: data,
+            options: [],
+            format: nil
+        ) as? [String] else { return [] }
+        return array
+    }()    
     
     /// 自定义加载Emoji图片的Bundle
     public var emojiBundle: WYSourceBundle? = WYSourceBundle(bundleName: "WYChatView", subdirectory: "WYChatViewEmoji")
@@ -87,42 +96,42 @@ public struct WYEmojiViewConfig {
 }
 
 /// 返回一个Bool值来判定各控件的点击或手势事件是否需要内部处理(默认返回True)
-@objc public protocol WYChatEmojiViewEventsHandler {
+public protocol WYChatEmojiViewEventsHandler {
     
     /// 是否需要内部处理 Emoji 点击事件
-    @objc optional func canManagerEmojiViewClickEvents(_ emojiView: WYChatEmojiView, _ indexPath: IndexPath) -> Bool
+    func canManagerEmojiViewClickEvents(_ emojiView: WYChatEmojiView, _ indexPath: IndexPath) -> Bool
     
     /// 是否需要内部处理 表情预览控件(仅限WYEmojiPreviewStyle == other时才会回调) 的长按事件
-    @objc optional func canManagerEmojiLongPressEvents(_ gestureRecognizer: UILongPressGestureRecognizer, emoji: String, imageView: UIImageView) -> Bool
+    func canManagerEmojiLongPressEvents(_ gestureRecognizer: UILongPressGestureRecognizer, emoji: String, imageView: UIImageView) -> Bool
     
     /// 是否需要内部处理 删除按钮 点击事件
-    @objc optional func canManagerEmojiDeleteViewClickEvents(_ deleteView: UIButton) -> Bool
+    func canManagerEmojiDeleteViewClickEvents(_ deleteView: UIButton) -> Bool
     
     /// 是否需要内部处理 发送按钮 点击事件
-    @objc optional func canManagerEmojiSendViewClickEvents(_ sendView: UIButton) -> Bool
+    func canManagerEmojiSendViewClickEvents(_ sendView: UIButton) -> Bool
 }
 
-@objc public protocol WYChatEmojiViewDelegate {
+public protocol WYChatEmojiViewDelegate {
     
     /// 监控Emoji点击事件
-    @objc optional func didClick(_ emojiView: WYChatEmojiView, _ indexPath: IndexPath)
+    func didClick(_ emojiView: WYChatEmojiView, _ indexPath: IndexPath)
     
     /// 长按了表情预览控件(仅限WYEmojiPreviewStyle == other时才会回调)
-    @objc optional func emojiItemLongPress(_ gestureRecognizer: UILongPressGestureRecognizer, emoji: String, imageView: UIImageView)
+    func emojiItemLongPress(_ gestureRecognizer: UILongPressGestureRecognizer, emoji: String, imageView: UIImageView)
     
     /// 点击了发送按钮
-    @objc optional func didClickEmojiSendView(_ sendView: UIButton)
+    func didClickEmojiSendView(_ sendView: UIButton)
     
     /// 点击了删除按钮
-    @objc optional func didClickEmojiDeleteView(_ deleteView: UIButton)
+    func didClickEmojiDeleteView(_ deleteView: UIButton)
 }
 
 public class WYChatEmojiView: UIView, WYEmojiFuncAreaViewDelegate {
     
-    public weak var eventsHandler: WYChatEmojiViewEventsHandler? = nil
+    public var eventsHandler: WYChatEmojiViewEventsHandler? = nil
     
     /// 点击或长按事件代理
-    public weak var delegate: WYChatEmojiViewDelegate?
+    public var delegate: WYChatEmojiViewDelegate?
     
     public lazy var collectionView: UICollectionView = {
         
@@ -234,60 +243,69 @@ public class WYChatEmojiView: UIView, WYEmojiFuncAreaViewDelegate {
     }
     
     public func updateRecentlyEmoji(_ attributedText: NSAttributedString) {
-        guard emojiViewConfig.showRecently == true else {
+        guard emojiViewConfig.showRecently else {
             return
         }
         
-        let _: NSMutableString = NSMutableString(string: attributedText.string)
-        attributedText.enumerateAttribute(NSAttributedString.Key.attachment, in: NSMakeRange(0, attributedText.string.utf16.count), options: NSAttributedString.EnumerationOptions.longestEffectiveRangeNotRequired) { value, range, stop in
-            if value is WYTextAttachment {
+        let text = attributedText.string
+        
+        // 遍历附件属性
+        attributedText.enumerateAttribute(.attachment,
+                                          in: NSRange(location: 0, length: text.utf16.count),
+                                          options: [.longestEffectiveRangeNotRequired]) { value, range, _ in
+            if let attachment = value as? WYTextAttachment {
                 // 拿到文本附件
-                let attachment: WYTextAttachment = value as! WYTextAttachment
-                let emoji: String = String(format: "%@", attachment.imageName)
+                let emoji = attachment.imageName
+                
                 // 更新最近使用的表情
                 var recently: [String] = UserDefaults.standard.array(forKey: emojiViewRecentlyCountKey) as? [String] ?? []
-                if recently.contains(emoji) {
-                    recently.remove(at: recently.firstIndex(of: emoji)!)
+                
+                if let index = recently.firstIndex(of: emoji) {
+                    recently.remove(at: index)
                 }
                 recently.insert(emoji, at: 0)
+                
                 if recently.count > emojiViewConfig.recentlyCount {
                     recently.removeLast()
                 }
-                UserDefaults.standard.setValue(Array(recently), forKey: emojiViewRecentlyCountKey)
+                
+                UserDefaults.standard.setValue(recently, forKey: emojiViewRecentlyCountKey)
                 UserDefaults.standard.synchronize()
-
-                if recentlyEmoji.isEmpty == false {
-                    dataSource[0] = Array(recently)
-                }else {
-                    dataSource.insert(Array(recently), at: 0)
+                
+                // 更新数据源
+                if !recentlyEmoji.isEmpty {
+                    dataSource[0] = recently
+                } else {
+                    dataSource.insert(recently, at: 0)
                 }
-
-                recentlyEmoji = Array(recently)
-
-                if range == NSMakeRange(0, 1) {
+                
+                recentlyEmoji = recently
+                
+                // 如果是首个字符，刷新 collectionView
+                if range.location == 0 && range.length == 1 {
                     collectionView.reloadData()
                 }
             }
         }
     }
     
-    @objc public func didClickEmojiSendView(_ sendView: UIButton) {
+    public func didClickEmojiSendView(_ sendView: UIButton) {
         
         if let sendView: UIButton = funcAreaView?.sendView {
-            guard (eventsHandler?.canManagerEmojiSendViewClickEvents?(sendView) ?? true) else {
+            guard (eventsHandler?.canManagerEmojiSendViewClickEvents(sendView) ?? true) else {
                 return
             }
         }
-        delegate?.didClickEmojiSendView?(sendView)
+        delegate?.didClickEmojiSendView(sendView)
     }
     
-    @objc public func didClickEmojiDeleteView(_ deleteView: UIButton) {
+    public func didClickEmojiDeleteView(_ deleteView: UIButton) {
         if let deleteView: UIButton = funcAreaView?.deleteView {
-            guard (eventsHandler?.canManagerEmojiDeleteViewClickEvents?(deleteView) ?? true) else {
+            guard (eventsHandler?.canManagerEmojiDeleteViewClickEvents(deleteView) ?? true) else {
                 return
             }
         }
-        delegate?.didClickEmojiDeleteView?(deleteView)
+        delegate?.didClickEmojiDeleteView(deleteView)
     }
     
     private func sectionInset(_ section: Int) -> UIEdgeInsets {
@@ -385,11 +403,11 @@ extension WYChatEmojiView: UICollectionViewDelegate, UICollectionViewDataSource,
     
     public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
-        guard (eventsHandler?.canManagerEmojiViewClickEvents?(self, indexPath) ?? true) else {
+        guard (eventsHandler?.canManagerEmojiViewClickEvents(self, indexPath) ?? true) else {
             return
         }
         collectionView.deselectItem(at: indexPath, animated: true)
-        delegate?.didClick?(self, indexPath)
+        delegate?.didClick(self, indexPath)
     }
 }
 
@@ -397,14 +415,14 @@ extension WYChatEmojiView: WYEmojiViewCellDelegate {
     
     public func willShowPreviewView(_ gestureRecognizer: UILongPressGestureRecognizer, emoji: String, according: UIImageView) {
         
-        guard (eventsHandler?.canManagerEmojiLongPressEvents?(gestureRecognizer, emoji: emoji, imageView: according) ?? true) else {
+        guard (eventsHandler?.canManagerEmojiLongPressEvents(gestureRecognizer, emoji: emoji, imageView: according) ?? true) else {
             return
         }
         
         if gestureRecognizer.state == .began {
             WYEmojiPreviewView.show(emoji: emoji, according: according) { [weak self] imageName, imageView in
                 DispatchQueue.main.async {
-                    self?.delegate?.emojiItemLongPress?(gestureRecognizer, emoji: emoji, imageView: according)
+                    self?.delegate?.emojiItemLongPress(gestureRecognizer, emoji: emoji, imageView: according)
                 }
             }
         }
@@ -413,4 +431,43 @@ extension WYChatEmojiView: WYEmojiViewCellDelegate {
             WYEmojiPreviewView.dismiss()
         }
     }
+}
+
+/// 返回一个Bool值来判定各控件的点击或手势事件是否需要内部处理(默认返回True)
+public extension WYChatEmojiViewEventsHandler {
+    
+    /// 是否需要内部处理 Emoji 点击事件
+    func canManagerEmojiViewClickEvents(_ emojiView: WYChatEmojiView, _ indexPath: IndexPath) -> Bool {
+        return true
+    }
+    
+    /// 是否需要内部处理 表情预览控件(仅限WYEmojiPreviewStyle == other时才会回调) 的长按事件
+    func canManagerEmojiLongPressEvents(_ gestureRecognizer: UILongPressGestureRecognizer, emoji: String, imageView: UIImageView) -> Bool {
+        return true
+    }
+    
+    /// 是否需要内部处理 删除按钮 点击事件
+    func canManagerEmojiDeleteViewClickEvents(_ deleteView: UIButton) -> Bool {
+        return true
+    }
+    
+    /// 是否需要内部处理 发送按钮 点击事件
+    func canManagerEmojiSendViewClickEvents(_ sendView: UIButton) -> Bool {
+        return true
+    }
+}
+
+public extension WYChatEmojiViewDelegate {
+    
+    /// 监控Emoji点击事件
+    func didClick(_ emojiView: WYChatEmojiView, _ indexPath: IndexPath) {}
+    
+    /// 长按了表情预览控件(仅限WYEmojiPreviewStyle == other时才会回调)
+    func emojiItemLongPress(_ gestureRecognizer: UILongPressGestureRecognizer, emoji: String, imageView: UIImageView) {}
+    
+    /// 点击了发送按钮
+    func didClickEmojiSendView(_ sendView: UIButton) {}
+    
+    /// 点击了删除按钮
+    func didClickEmojiDeleteView(_ deleteView: UIButton) {}
 }

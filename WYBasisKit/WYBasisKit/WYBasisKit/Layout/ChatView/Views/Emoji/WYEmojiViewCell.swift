@@ -8,15 +8,15 @@
 
 import UIKit
 
-@objc public protocol WYEmojiViewCellDelegate {
+public protocol WYEmojiViewCellDelegate {
     
     /// 长按了表情预览控件(仅限WYEmojiPreviewStyle == other时才会回调)
-    @objc optional func willShowPreviewView(_ gestureRecognizer: UILongPressGestureRecognizer, emoji: String, according: UIImageView)
+    func willShowPreviewView(_ gestureRecognizer: UILongPressGestureRecognizer, emoji: String, according: UIImageView)
 }
 
 public class WYEmojiViewCell: UICollectionViewCell {
     
-    weak var delegate: WYEmojiViewCellDelegate? = nil
+    public var delegate: WYEmojiViewCellDelegate? = nil
     
     private let emojiView: UIImageView = UIImageView()
     private var emojiString: String = ""
@@ -45,10 +45,16 @@ public class WYEmojiViewCell: UICollectionViewCell {
     }
     
     @objc private func didLongPress(sender: UILongPressGestureRecognizer) {
-        delegate?.willShowPreviewView?(sender, emoji: emoji, according: emojiView)
+        delegate?.willShowPreviewView(sender, emoji: emoji, according: emojiView)
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+}
+
+public extension WYEmojiViewCellDelegate {
+    
+    /// 长按了表情预览控件(仅限WYEmojiPreviewStyle == other时才会回调)
+    func willShowPreviewView(_ gestureRecognizer: UILongPressGestureRecognizer, emoji: String, according: UIImageView) {}
 }

@@ -9,22 +9,22 @@
 import UIKit
 import SnapKit
 
-@objc public protocol WYPagingViewDelegate {
+public protocol WYPagingViewDelegate {
     
-    @objc optional func itemDidScroll(_ pagingIndex: NSInteger)
+    func itemDidScroll(_ pagingIndex: Int)
 }
 
 public class WYPagingView: UIView {
     
     /// 点击或滚动事件代理(也可以通过传入block监听)
-    public weak var delegate: WYPagingViewDelegate?
+    public var delegate: WYPagingViewDelegate?
     
     /**
      * 点击或滚动事件(也可以通过实现代理监听)
      *
      * @param handler 点击或滚动事件的block
      */
-    public func itemDidScroll(handler: @escaping ((_ pagingIndex: NSInteger) -> Void)) {
+    public func itemDidScroll(handler: @escaping ((_ pagingIndex: Int) -> Void)) {
         actionHandler = handler
     }
 
@@ -119,7 +119,7 @@ public class WYPagingView: UIView {
     public var bar_title_selectedFont: UIFont = .systemFont(ofSize: UIFont.wy_fontSize(15, WYBasisKitConfig.defaultScreenPixels))
 
     /// 初始选中第几项  默认第一项
-    public var bar_selectedIndex: NSInteger = 0
+    public var bar_selectedIndex: Int = 0
     
     /// 控制器是否需要左右滑动(默认支持)
     public var canScrollController: Bool = true
@@ -167,7 +167,7 @@ public class WYPagingView: UIView {
     
     private var currentButtonItem: WYPagingItem!
     
-    private var actionHandler: ((_ index: NSInteger) -> Void)?
+    private var actionHandler: ((_ index: Int) -> Void)?
     
     public init() {
         super.init(frame: .zero)
@@ -252,7 +252,7 @@ extension WYPagingView {
             actionHandler!(currentButtonItem.tag-buttonItemTagBegin)
         }
         
-        delegate?.itemDidScroll?(currentButtonItem.tag-buttonItemTagBegin)
+        delegate?.itemDidScroll(currentButtonItem.tag-buttonItemTagBegin)
     }
     
     fileprivate func updateButtonItemProperty(currentItem: WYPagingItem) {
@@ -405,7 +405,7 @@ extension WYPagingView {
     
     var controllerScrollView: UIScrollView {
         
-        var scrollView: UIScrollView? = objc_getAssociatedObject(self, WYAssociatedKeys.controllerScrollView) as? UIScrollView
+        var scrollView: UIScrollView? = objc_getAssociatedObject(self, &WYAssociatedKeys.controllerScrollView) as? UIScrollView
         
         if scrollView == nil {
             
@@ -452,7 +452,7 @@ extension WYPagingView {
                 lastView = controllerView!
             }
             
-            objc_setAssociatedObject(self, WYAssociatedKeys.controllerScrollView, scrollView, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            objc_setAssociatedObject(self, &WYAssociatedKeys.controllerScrollView, scrollView, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         }
         
         return scrollView!
@@ -460,7 +460,7 @@ extension WYPagingView {
     
     var barScrollView: UIScrollView {
         
-        var barScroll: UIScrollView? = objc_getAssociatedObject(self, WYAssociatedKeys.barScrollView) as? UIScrollView
+        var barScroll: UIScrollView? = objc_getAssociatedObject(self, &WYAssociatedKeys.barScrollView) as? UIScrollView
         
         if barScroll == nil {
             
@@ -475,7 +475,7 @@ extension WYPagingView {
                 make.top.left.width.equalToSuperview()
                 make.height.equalTo(bar_Height)
             }
-            objc_setAssociatedObject(self, WYAssociatedKeys.barScrollView, barScroll, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            objc_setAssociatedObject(self, &WYAssociatedKeys.barScrollView, barScroll, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         }
         barScroll!.contentSize = CGSize(width: barScroll!.contentSize.width, height: bar_Height)
         
@@ -484,7 +484,7 @@ extension WYPagingView {
     
     var barScrollLine: UIImageView {
         
-        var scrollLine: UIImageView? = objc_getAssociatedObject(self, WYAssociatedKeys.barScrollLine) as? UIImageView
+        var scrollLine: UIImageView? = objc_getAssociatedObject(self, &WYAssociatedKeys.barScrollLine) as? UIImageView
         
         if scrollLine == nil {
             
@@ -502,22 +502,19 @@ extension WYPagingView {
             }
             scrollLine?.wy_rectCorner(.allCorners).wy_cornerRadius(bar_scrollLineHeight / 2).wy_showVisual()
             
-            objc_setAssociatedObject(self, WYAssociatedKeys.barScrollLine, scrollLine!, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            objc_setAssociatedObject(self, &WYAssociatedKeys.barScrollLine, scrollLine!, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         }
         return scrollLine!
     }
     
-    var buttonItemTagBegin: NSInteger {
+    var buttonItemTagBegin: Int {
         return 1000
     }
     
     private struct WYAssociatedKeys {
-        
-        static let barScrollView = UnsafeRawPointer(bitPattern: "barScrollView".hashValue)!
-        
-        static let controllerScrollView = UnsafeRawPointer(bitPattern: "controllerScrollView".hashValue)!
-        
-        static let barScrollLine = UnsafeRawPointer(bitPattern: "barScrollLine".hashValue)!
+        static var barScrollView: UInt8 = 0
+        static var controllerScrollView: UInt8 = 0
+        static var barScrollLine: UInt8 = 0
     }
 }
 
@@ -542,4 +539,9 @@ private class WYPagingItem: UIButton {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+}
+
+public extension WYPagingViewDelegate {
+    
+    func itemDidScroll(_ pagingIndex: Int) {}
 }

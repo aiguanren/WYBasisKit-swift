@@ -10,7 +10,7 @@ import UIKit
 import CryptoKit
 
 /// 获取时间戳的模式
-@frozen public enum WYTimestampMode {
+public enum WYTimestampMode {
     
     /// 秒
     case second
@@ -23,7 +23,7 @@ import CryptoKit
 }
 
 /// 时间格式化模式
-@frozen public enum WYTimeFormat {
+public enum WYTimeFormat {
     
     /// 时:分
     case HM
@@ -42,7 +42,7 @@ import CryptoKit
 }
 
 /// 星期几
-@frozen public enum WYWhatDay: Int {
+public enum WYWhatDay: Int {
     
     /// 未知
     case unknown = 0
@@ -69,7 +69,7 @@ import CryptoKit
     case saturday
 }
 
-@frozen public enum WYTimeDistance {
+public enum WYTimeDistance {
     
     /// 未知
     case unknown
@@ -113,7 +113,7 @@ public extension String {
      *  @param max   最多需要多少个字符
      *
      */
-    static func wy_random(minimux: NSInteger = 1, maximum: NSInteger = 100) -> String {
+    static func wy_random(minimux: Int = 1, maximum: Int = 100) -> String {
         
         guard maximum >= minimux else { return "" }
         
@@ -150,7 +150,7 @@ public extension String {
         return contentPhrases.joined()
         
         /// 找出长度最接近 surplusLength 且小于 surplusLength 的 phrase
-        func sharedBestFitPhrase(surplusLength: NSInteger) -> String {
+        func sharedBestFitPhrase(surplusLength: Int) -> String {
             var selectedPhrase = ""
             for phrase in phrases {
                 
@@ -185,7 +185,7 @@ public extension String {
         }
         
         /// 判断下一个匹配的字符串尾部是否有标点符号
-        func nextPhraseEndingsComplete(surplusLength: NSInteger) -> Bool {
+        func nextPhraseEndingsComplete(surplusLength: Int) -> Bool {
             
             // 获取下一个字符串
             let nextPhrase: String = sharedBestFitPhrase(surplusLength: surplusLength)
@@ -195,7 +195,7 @@ public extension String {
         }
         
         /// 查找并拼接字符长度至目标长度
-        func findSpliceCharacter(targetLength: NSInteger, phrases: [String] = []) ->[String] {
+        func findSpliceCharacter(targetLength: Int, phrases: [String] = []) ->[String] {
             
             // 当前字符串
             let currentPhrase: String = phrases.joined()
@@ -283,12 +283,15 @@ public extension String {
         
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = lineSpacing
-        let attributes = [NSAttributedString.Key.font: controlFont, NSAttributedString.Key.paragraphStyle: paragraphStyle, NSAttributedString.Key.kern: NSNumber(value: Double(wordsSpacing))]
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: controlFont,
+            .paragraphStyle: paragraphStyle,
+            .kern: wordsSpacing
+        ]
         
-        let string = self as NSString
-        let stringSize: CGSize = string.boundingRect(with: controlSize, options: NSStringDrawingOptions(rawValue: NSStringDrawingOptions.truncatesLastVisibleLine.rawValue | NSStringDrawingOptions.usesLineFragmentOrigin.rawValue | NSStringDrawingOptions.usesFontLeading.rawValue), attributes: attributes, context: nil).size
+        let attributedString = NSAttributedString(string: self, attributes: attributes)
         
-        return CGSize(width: ceil(stringSize.width), height: ceil(stringSize.height))
+        return attributedString.wy_calculateSize(controlSize: controlSize)
     }
     
     /// 判断字符串包含某个字符串
@@ -302,7 +305,7 @@ public extension String {
     }
     
     /// 字符串截取(从第几位截取到第几位)
-    func wy_substring(from: NSInteger, to: NSInteger) -> String {
+    func wy_substring(from: Int, to: Int) -> String {
         
         guard from < self.count else {
             return self
@@ -319,7 +322,7 @@ public extension String {
     }
     
     /// 字符串截取(从第几位往后截取几位)
-    func wy_substring(from: NSInteger, after: NSInteger) -> String {
+    func wy_substring(from: Int, after: Int) -> String {
         
         guard from < self.count else {
             return self
@@ -341,14 +344,21 @@ public extension String {
      *  @param replacement: 替换成什么字符
      *  @param useRegex: 过滤方式，true正则表达式过滤, false为系统方式过滤
      */
-    func wy_replace(appointSymbol: String ,replacement: String, useRegex: Bool = false) -> String {
+    func wy_replace(appointSymbol: String, replacement: String, useRegex: Bool = false) -> String {
         
-        if (useRegex == true) {
-            let regex = try! NSRegularExpression(pattern: "[\(appointSymbol)]", options: [])
-            return regex.stringByReplacingMatches(in: self, options: [],
-                                                  range: NSMakeRange(0, self.count),
-                                                  withTemplate: replacement)
-        }else {
+        if useRegex == true {
+            // 正则方式，替换 appointSymbol 中的每个字符
+            do {
+                let pattern = "[\(NSRegularExpression.escapedPattern(for: appointSymbol))]"
+                let regex = try NSRegularExpression(pattern: pattern)
+                let range = NSRange(self.startIndex..<self.endIndex, in: self)
+                return regex.stringByReplacingMatches(in: self, options: [], range: range, withTemplate: replacement)
+            } catch {
+                // print("正则表达式创建失败: \(error)")
+                return self
+            }
+        } else {
+            // 系统方式，替换整个字符串
             return self.replacingOccurrences(of: appointSymbol, with: replacement)
         }
     }
@@ -379,15 +389,20 @@ public extension String {
     /// Encode
     func wy_encoded(escape: String = "?!@#$^&%*+,:;='\"`<>()[]{}/\\| ") -> String {
         
-        let characterSet = NSCharacterSet(charactersIn: escape).inverted
+        // 生成允许编码的字符集（排除 escape 中的字符）
+        let characterSet = CharacterSet(charactersIn: escape).inverted
+        
+        // 进行百分号编码
         return self.addingPercentEncoding(withAllowedCharacters: characterSet) ?? self
     }
     
     /// Decode
     var wy_decoded: String {
         
-        let targetString: NSMutableString = NSMutableString(string: self)
-        targetString.replaceOccurrences(of: "+", with: "", options: .literal, range: NSMakeRange(0, targetString.length))
+        // 先把 "+" 去掉
+        let targetString = self.replacingOccurrences(of: "+", with: "")
+        
+        // 进行 URL 解码
         return targetString.removingPercentEncoding ?? self
     }
     
@@ -428,26 +443,20 @@ public extension String {
     
     /// 秒 转 时分秒（00:00:00）格式
     func wy_secondConvertDate(check: Bool) -> String {
-        let totalSeconds: Int = Int((self as NSString).doubleValue)
-        var hours = 0
-        var minutes = 0
-        var seconds = 0
-        var hoursText = ""
-        var minutesText = ""
-        var secondsText = ""
+        guard let totalSecondsDouble = Double(self) else { return "00:00" }
+        let totalSeconds = Int(totalSecondsDouble)
         
-        hours = totalSeconds / 3600
-        hoursText = hours > 9 ? "\(hours)" : "0\(hours)"
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
         
-        minutes = totalSeconds % 3600 / 60
-        minutesText = minutes > 9 ? "\(minutes)" : "0\(minutes)"
+        let hoursText = String(format: "%02d", hours)
+        let minutesText = String(format: "%02d", minutes)
+        let secondsText = String(format: "%02d", seconds)
         
-        seconds = totalSeconds % 3600 % 60
-        secondsText = seconds > 9 ? "\(seconds)" : "0\(seconds)"
-        
-        if ((check == true) && (hours <= 0)) {
+        if check && hours <= 0 {
             return "\(minutesText):\(secondsText)"
-        }else {
+        } else {
             return "\(hoursText):\(minutesText):\(secondsText)"
         }
     }
@@ -467,7 +476,7 @@ public extension String {
         
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .iso8601)
-        formatter.calendar.timeZone = NSTimeZone.local
+        formatter.calendar.timeZone = TimeZone.current
         if showAmPmSymbol == false {
             // 不显示上午或者下午标识
             formatter.amSymbol = ""
@@ -505,7 +514,7 @@ public extension String {
         let date: Date = Date(timeIntervalSince1970: timeInterval / (count == 13 ? 1000.0 : 1.0))
         
         var calendar: Calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = NSTimeZone.local
+        calendar.timeZone = TimeZone.current
         
         let dateComponents: DateComponents = calendar.dateComponents([Calendar.Component.year,Calendar.Component.month,Calendar.Component.weekday,Calendar.Component.day], from: date)
         
@@ -540,7 +549,7 @@ public extension String {
         }
         
         var calendar: Calendar = Calendar(identifier: .iso8601)
-        calendar.timeZone = NSTimeZone.local
+        calendar.timeZone = TimeZone.current
         
         let dateFormatter: DateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
@@ -615,9 +624,9 @@ public extension String {
         // 当前时时间戳
         let currentTime = Date().timeIntervalSince1970
         // 传入的时间
-        let computingTime = (self.count <= 10) ? (NSInteger(self) ?? 0) : ((NSInteger(self) ?? 0) / 1000)
+        let computingTime = (self.count <= 10) ? (Int(self) ?? 0) : ((Int(self) ?? 0) / 1000)
         // 距离当前的时间差
-        let timeDifference = NSInteger(currentTime) - computingTime
+        let timeDifference = Int(currentTime) - computingTime
         // 秒转分钟
         let second = timeDifference / 60
         if (second <= 0) {
@@ -655,7 +664,9 @@ public extension String {
     
     /// 从字符串中提取数字
     var wy_extractNumbers: [String] {
-        return self.components(separatedBy: NSCharacterSet.decimalDigits.inverted).compactMap({$0.count > 0 ? $0 : nil})
+        return self
+            .components(separatedBy: CharacterSet.decimalDigits.inverted)
+            .compactMap { $0.isEmpty ? nil : $0 }
     }
     
     /**
@@ -665,23 +676,19 @@ public extension String {
      */
     func wy_phoneticTransform(tone: Bool = false, interval: Bool = false) -> String {
         
-        // 转化为可变字符串
-        let mString = NSMutableString(string: self)
-        
-        // 转化为带声调的拼音
-        CFStringTransform(mString, nil, kCFStringTransformToLatin, false)
+        // 转化为拼音
+        var phonetic = self.applyingTransform(.toLatin, reverse: false) ?? self
         
         if !tone {
             // 转化为不带声调
-            CFStringTransform(mString, nil, kCFStringTransformStripDiacritics, false)
+            phonetic = phonetic.applyingTransform(.stripDiacritics, reverse: false) ?? phonetic
         }
-        
-        let phonetic = (NSString(string: mString) as String)
         
         if !interval {
             // 去除字符串之间的空格
-            return phonetic.replacingOccurrences(of: " ", with: "")
+            phonetic = phonetic.replacingOccurrences(of: " ", with: "")
         }
+        
         return phonetic
     }
     
