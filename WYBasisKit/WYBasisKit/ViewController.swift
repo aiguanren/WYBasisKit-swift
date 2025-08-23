@@ -15,7 +15,7 @@ class ViewController: UIViewController {
 
         // Do any additional setup after loading the view.
         view.backgroundColor = .white
-        WYActivity.showScrollInfo("查看测试/使用样例请移步 WYBasisKit/WYBasisKitTest")
+        WYActivity.showScrollInfo("查看测试/使用样例请移步 SwiftVerify或ObjCVerify")
     }
     
     /*

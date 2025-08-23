@@ -1,6 +1,6 @@
 //
 //  WYTestVibrateController.swift
-//  WYBasisKitVerify
+//  WYBasisKit
 //
 //  Created by guanren on 2025/8/16.
 //

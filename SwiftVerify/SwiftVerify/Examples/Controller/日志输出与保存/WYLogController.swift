@@ -1,6 +1,6 @@
 //
 //  WYLogController.swift
-//  WYBasisKitVerify
+//  WYBasisKit
 //
 //  Created by guanren on 2025/7/26.
 //

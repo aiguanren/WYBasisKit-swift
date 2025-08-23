@@ -7,6 +7,7 @@
 
 #import "AppDelegate.h"
 #import "ViewController.h"
+#import <WYBasisKitSwift-Swift.h>
 
 @interface AppDelegate ()
 
@@ -21,6 +22,8 @@
     _window.backgroundColor = [UIColor whiteColor];
     [_window makeKeyAndVisible];
     _window.rootViewController = [[UINavigationController alloc]initWithRootViewController:[[ViewController alloc]init]];
+    
+    WYBasisKitConfigObjC.defaultScreenPixels = [[WYScreenPixelsObjC alloc] initWithWidth:375 height:812];
     
     // 屏蔽控制台约束输出
     [[NSUserDefaults standardUserDefaults] setValue:@(NO) forKey:@"_UIConstraintBasedLayoutLogUnsatisfiable"];
