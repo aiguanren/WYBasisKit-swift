@@ -936,17 +936,17 @@
 			isa = PBXGroup;
 			children = (
 				58678DFF2DFA627C0035673E /* Config */,
+				58678E772DFA627C0035673E /* Layout */,
 				58678DE62DFA627C0035673E /* Activity */,
-				58678DF32DFA627C0035673E /* Authorization */,
+				58678E882DFA627C0035673E /* Storage */,
+				58E7127C2E4B029B0095E71C /* AudioKit */,
 				58678DFC2DFA627C0035673E /* Codable */,
 				58678E322DFA627C0035673E /* Extension */,
-				58678E772DFA627C0035673E /* Layout */,
 				58678E7A2DFA627C0035673E /* Localizable */,
-				58E7127C2E4B029B0095E71C /* AudioKit */,
 				58678E862DFA627C0035673E /* Networking */,
-				58678E882DFA627C0035673E /* Storage */,
-				58682F7B2E0E440E0057CC53 /* EventHandler */,
 				58CDEE562E34777400ACE975 /* LogManager */,
+				58678DF32DFA627C0035673E /* Authorization */,
+				58682F7B2E0E440E0057CC53 /* EventHandler */,
 			);
 			path = WYBasisKit;
 			sourceTree = "<group>";
@@ -1317,7 +1317,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.guanren.WYBasisKit-swift.WYBasisKit";
+				PRODUCT_BUNDLE_IDENTIFIER = com.aiguanren.WYBasisKit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -1348,7 +1348,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.guanren.WYBasisKit-swift.WYBasisKit";
+				PRODUCT_BUNDLE_IDENTIFIER = com.aiguanren.WYBasisKit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

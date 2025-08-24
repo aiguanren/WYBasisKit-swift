@@ -35,8 +35,6 @@
 //    loadingOptions.animation = WYActivityAnimationObjCGifOrApng;
 //    loadingOptions.config = [WYActivityConfigObjC concise];
 //    loadingOptions.config.animationSize = CGSizeMake(50, 50);
-//
-//    WYActivity.showLoading(in: view, animation: .gifOrApng, config: WYActivityConfig.concise)
     
 //    [WYActivityObjC showLoadingIn:self.view];
 //    [WYActivityObjC showLoading:@"123" in:self.view];
@@ -67,6 +65,30 @@
 //    [WYSpeechRecognitionAuthorizationObjC authorizeSpeechRecognitionWithShowAlert:YES handler:^(BOOL authorized) {
 //
 //    }];
+    
+    WYCodableObjC *codableObjC = [[WYCodableObjC alloc] init];
+    [codableObjC useDefaultKeys];
+    [codableObjC convertFromSnakeCase];
+    [codableObjC customKeyMapping:^NSString * _Nonnull(NSArray<NSString *> * _Nonnull keyPath) {
+        // 自定义键映射逻辑
+        NSString *lastKey = keyPath.lastObject;
+        // 示例：将所有键转换为大写
+        return [lastKey uppercaseString];
+    }];
+    
+    @try {
+        NSError *error = nil;
+        NSDictionary *dic = [WYCodableObjC stringToDictionary:@"" error:&error];
+    } @catch (NSException *exception) {
+        
+    } @finally {
+        
+    }
+    
+    NSError *error = nil;
+    NSObject *obj = [codableObjC decode:@"" modelClass:NSObject.class error:&error];
+    
+    NSString *str = [codableObjC encode:[[NSObject alloc] init] convertType:NSString.class error:&error];
 }
 
 
