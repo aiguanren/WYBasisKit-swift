@@ -139,8 +139,11 @@ public class WYPagingView: UIView {
     /// 传入的选中的图片数组
     public private(set) var selectedImages: [UIImage] = []
     
+    /// 按钮栏所有按钮组件
+    public private(set) var buttonItems: [WYPagingItem] = []
+    
     /// 传入的父控制器
-    public private(set) weak var superController: UIViewController!
+    public private(set) weak var superController: UIViewController?
     
     /**
      *调用后开始布局
@@ -360,7 +363,6 @@ extension WYPagingView {
                     make.height.equalTo(bar_item_height)
                 }else {
                     if (bar_item_appendSize.equalTo(.zero)) {
-                        
                         make.top.equalToSuperview()
                         make.bottom.equalToSuperview().offset(-bar_dividingStripHeight)
                     }
@@ -371,9 +373,10 @@ extension WYPagingView {
             }
             
             if (bar_item_cornerRadius > 0) {
-                
                 buttonItem.wy_rectCorner(.allCorners).wy_cornerRadius(bar_item_cornerRadius).wy_showVisual()
             }
+            
+            buttonItems.append(buttonItem)
             
             lastView = buttonItem
             
@@ -428,7 +431,7 @@ extension WYPagingView {
             var lastView: UIView? = nil
             for index in 0..<controllers.count {
                 
-                superController.addChild(controllers[index])
+                superController?.addChild(controllers[index])
                 
                 let controllerView = controllers[index].view
                 if let controller_bg_color: UIColor = bar_pagingContro_bg_color {
@@ -518,7 +521,7 @@ extension WYPagingView {
     }
 }
 
-private class WYPagingItem: UIButton {
+public class WYPagingItem: UIButton {
     
     let contentView: UIButton = UIButton(type: .custom)
     
