@@ -523,9 +523,9 @@ extension WYPagingView {
 
 public class WYPagingItem: UIButton {
     
-    let contentView: UIButton = UIButton(type: .custom)
+    public let contentView: UIButton = UIButton(type: .custom)
     
-    init(appendSize: CGSize) {
+    public init(appendSize: CGSize) {
         
         super.init(frame: .zero)
         contentView.isUserInteractionEnabled = false
@@ -539,7 +539,7 @@ public class WYPagingItem: UIButton {
         }
     }
     
-    required init?(coder: NSCoder) {
+    public required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 }
